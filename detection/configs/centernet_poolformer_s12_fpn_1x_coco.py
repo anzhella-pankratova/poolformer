@@ -16,15 +16,16 @@ model = dict(
             checkpoint=\
                 'https://github.com/sail-sg/poolformer/releases/download/v1.0/poolformer_s12.pth.tar', 
             ),
-        ),
-    neck=dict(
-        type='FPN',
-        in_channels=[64, 128, 320, 512],
-        out_channels=256,
-        start_level=1,
-        add_extra_convs='on_input',
-        num_outs=5))
+    ),
+)
+    #neck=dict(
+    #    type='FPN',
+    #    in_channels=[64, 128, 320, 512],
+    #    out_channels=256,
+    #    start_level=1,
+    #    add_extra_convs='on_input',
+    #    num_outs=5))
 
-# optimizer
-#optimizer = dict(_delete_=True, type='AdamW', lr=0.0001, weight_decay=0.0001)
+#optimizer
+#optimizer = dict(_delete_=True, type='AdamW', lr=0.00005, weight_decay=0.0001)
 #optimizer_config = dict(grad_clip=None)
