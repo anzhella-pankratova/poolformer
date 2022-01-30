@@ -1,11 +1,5 @@
 model = dict(
     type='CenterNet',
-    backbone=dict(
-        type='ResNet',
-        depth=18,
-        norm_eval=False,
-        norm_cfg=dict(type='BN'),
-        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet18')),
     neck=dict(
         type='CTResNetNeck',
         in_channel=512,
