@@ -1,29 +1,40 @@
 # model settings
-input_size = 300
+
 model = dict(
     type='SingleStageDetector',
-    pretrained='open-mmlab://vgg16_caffe',
+    #pretrained='open-mmlab://vgg16_caffe',
     backbone=dict(
-        type='SSDVGG',
-        input_size=input_size,
-        depth=16,
-        with_last_pool=False,
-        ceil_mode=True,
+    #    type='SSDVGG',
+        #input_size=input_size,
+        #depth=16,
+        fork_feat=True,
+        #ceil_mode=True,
         out_indices=(3, 4),
-        out_feature_indices=(22, 34),
-        l2_norm_scale=20),
-    neck=None,
+        #out_feature_indices=(22, 34),
+        #l2_norm_scale=20)
+    ),
+    neck=dict(
+        type='SSDNeck',
+        in_channels=(80, 320),
+        out_channels=(80, 320, 512, 256, 256, 128),
+        level_strides=(2, 2, 2, 2),
+        level_paddings=(1, 1, 1, 1),
+        l2_norm_scale=None,
+        use_depthwise=True,
+        norm_cfg=dict(type='BN', eps=0.001, momentum=0.03),
+        act_cfg=dict(type='ReLU6'),
+        init_cfg=dict(type='TruncNormal', layer='Conv2d', std=0.03)),
     bbox_head=dict(
         type='SSDHead',
-        in_channels=(512, 1024, 512, 256, 256, 256),
+        in_channels=(80, 320, 512, 256, 256, 128),
         num_classes=80,
         anchor_generator=dict(
             type='SSDAnchorGenerator',
             scale_major=False,
-            input_size=input_size,
             basesize_ratio_range=(0.15, 0.9),
-            strides=[8, 16, 32, 64, 100, 300],
-            ratios=[[2], [2, 3], [2, 3], [2, 3], [2], [2]]),
+            strides=[16, 32, 64, 128, 256, -1],
+            ratios=[[2, 3], [2, 3], [2, 3], [2, 3], [2, 3], [2]],
+        ),
         bbox_coder=dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
