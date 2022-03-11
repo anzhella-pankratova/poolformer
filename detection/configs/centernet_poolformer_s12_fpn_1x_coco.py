@@ -19,7 +19,7 @@ model = dict(
     ),
     neck=dict(
         type='CTResNetNeck',
-        in_channel=512,
+        in_channel=320,
         num_deconv_filters=(256, 128, 64),
         num_deconv_kernels=(4, 4, 4),
         use_dcn=True

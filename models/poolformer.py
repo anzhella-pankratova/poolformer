@@ -19,6 +19,8 @@ import copy
 import torch
 import torch.nn as nn
 
+from ptflops import get_model_complexity_info
+
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.models.layers import DropPath, trunc_normal_
 from timm.models.registry import register_model
@@ -271,8 +273,12 @@ class PoolFormer(nn.Module):
             self.num_classes = num_classes
         self.fork_feat = fork_feat
 
-        self.patch_embed = PatchEmbed(
-            patch_size=in_patch_size, stride=in_stride, padding=in_pad, 
+        self.patch_embed1 = PatchEmbed(
+            patch_size=5, stride=2, padding=in_pad, 
+            in_chans=3, embed_dim=3)
+        
+        self.patch_embed2 = PatchEmbed(
+            patch_size=3, stride=2, padding=in_pad, 
             in_chans=3, embed_dim=embed_dims[0])
 
         # set the main block in network
@@ -381,7 +387,9 @@ class PoolFormer(nn.Module):
             self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
 
     def forward_embeddings(self, x):
-        x = self.patch_embed(x)
+        x = self.patch_embed1(x)
+        #print(x.shape)
+        x = self.patch_embed2(x)
         return x
 
     def forward_tokens(self, x):
@@ -516,15 +524,18 @@ if has_mmseg and has_mmdet:
         PoolFormer-S12 model, Params: 12M
         """
         def __init__(self, **kwargs):
-            layers = [2, 2, 6, 2]
-            embed_dims = [64, 128, 320, 512]
-            mlp_ratios = [4, 4, 4, 4]
+            layers = [2, 2, 4, 2] # 2 2 4 2
+            embed_dims = [32, 64, 128, 320]
+            mlp_ratios = [2, 2, 2, 2]
             downsamples = [True, True, True, True]
             super().__init__(
                 layers, embed_dims=embed_dims, 
                 mlp_ratios=mlp_ratios, downsamples=downsamples, 
                 fork_feat=True,
                 **kwargs)
+            #macs, params = get_model_complexity_info(self, (3, 320, 320))
+            #print('{:<30}  {:<8}'.format('Computational complexity: ', macs))
+            #print('{:<30}  {:<8}'.format('Number of parameters: ', params))
 
     @seg_BACKBONES.register_module()
     @det_BACKBONES.register_module()
