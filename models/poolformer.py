@@ -113,6 +113,14 @@ class GroupNorm(nn.GroupNorm):
     def __init__(self, num_channels, **kwargs):
         super().__init__(1, num_channels, **kwargs)
 
+class BatchNorm(nn.BatchNorm2d):
+    """
+    Batch Normalization with 1 group.
+    Input: tensor in shape [B, C, H, W]
+    """
+    def __init__(self, num_channels, **kwargs):
+        super().__init__(num_channels, **kwargs)
+
 
 class Pooling(nn.Module):
     """
@@ -173,15 +181,19 @@ class PoolFormerBlock(nn.Module):
     --use_layer_scale, --layer_scale_init_value: LayerScale, 
         refer to https://arxiv.org/abs/2103.17239
     """
-    def __init__(self, dim, pool_size=3, mlp_ratio=4., 
-                 act_layer=nn.GELU, norm_layer=GroupNorm, 
+    def __init__(self, dim, pool_size=3, mlp_ratio=4.,
+                 act_layer=nn.GELU, norm_layer=BatchNorm,
                  drop=0., drop_path=0., 
                  use_layer_scale=True, layer_scale_init_value=1e-5):
 
         super().__init__()
 
         self.norm1 = norm_layer(dim)
-        self.token_mixer = Pooling(pool_size=pool_size)
+        #self.token_mixer = Pooling(pool_size=pool_size)
+        # use DW conv mixer
+        self.token_mixer = nn.Conv2d(
+            in_channels=dim, out_channels=dim, kernel_size=3, stride=1, padding=1, groups=dim
+        )
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, 
@@ -213,7 +225,7 @@ class PoolFormerBlock(nn.Module):
 
 def basic_blocks(dim, index, layers, 
                  pool_size=3, mlp_ratio=4., 
-                 act_layer=nn.GELU, norm_layer=GroupNorm, 
+                 act_layer=nn.GELU, norm_layer=BatchNorm,
                  drop_rate=.0, drop_path_rate=0., 
                  use_layer_scale=True, layer_scale_init_value=1e-5):
     """
@@ -256,7 +268,7 @@ class PoolFormer(nn.Module):
     def __init__(self, layers, embed_dims=None, 
                  mlp_ratios=None, downsamples=None, 
                  pool_size=3, 
-                 norm_layer=GroupNorm, act_layer=nn.GELU, 
+                 norm_layer=BatchNorm, act_layer=nn.GELU, 
                  num_classes=1000,
                  in_patch_size=7, in_stride=4, in_pad=2, 
                  down_patch_size=3, down_stride=2, down_pad=1, 
@@ -275,11 +287,11 @@ class PoolFormer(nn.Module):
 
         self.patch_embed1 = PatchEmbed(
             patch_size=5, stride=2, padding=in_pad, 
-            in_chans=3, embed_dim=3)
-        
-        self.patch_embed2 = PatchEmbed(
-            patch_size=3, stride=2, padding=in_pad, 
             in_chans=3, embed_dim=embed_dims[0])
+
+        #self.patch_embed2 = PatchEmbed(
+        #    patch_size=3, stride=2, padding=in_pad,
+        #    in_chans=3, embed_dim=embed_dims[0])
 
         # set the main block in network
         network = []
@@ -389,7 +401,7 @@ class PoolFormer(nn.Module):
     def forward_embeddings(self, x):
         x = self.patch_embed1(x)
         #print(x.shape)
-        x = self.patch_embed2(x)
+        #x = self.patch_embed2(x)
         return x
 
     def forward_tokens(self, x):
@@ -524,9 +536,9 @@ if has_mmseg and has_mmdet:
         PoolFormer-S12 model, Params: 12M
         """
         def __init__(self, **kwargs):
-            layers = [2, 2, 4, 2] # 2 2 4 2
-            embed_dims = [32, 64, 128, 320]
-            mlp_ratios = [2, 2, 2, 2]
+            layers = [2, 2, 6, 2] # 2 2 4 2
+            embed_dims = [64, 128, 320, 512]
+            mlp_ratios = [4, 4, 4, 4]
             downsamples = [True, True, True, True]
             super().__init__(
                 layers, embed_dims=embed_dims, 
