@@ -545,6 +545,7 @@ if has_mmseg and has_mmdet:
                 mlp_ratios=mlp_ratios, downsamples=downsamples, 
                 fork_feat=True,
                 **kwargs)
+
             #macs, params = get_model_complexity_info(self, (3, 320, 320))
             #print('{:<30}  {:<8}'.format('Computational complexity: ', macs))
             #print('{:<30}  {:<8}'.format('Number of parameters: ', params))
